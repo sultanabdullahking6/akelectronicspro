@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="logo-badge.svg">
+<title>Page Not Found — AK Electronics Pro</title>
+<meta name="robots" content="noindex, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .error-wrap{min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px;}
+  .error-code{
+    font-family:var(--display); font-weight:800; font-size:clamp(5rem,18vw,9rem); line-height:1;
+    background:linear-gradient(135deg,var(--cyan),var(--violet) 55%,var(--pink));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .error-icon{width:70px; height:70px; margin-bottom:10px;}
+  .error-wrap h1{font-size:1.4rem; margin:8px 0 6px;}
+  .error-wrap p{color:var(--muted); max-width:420px; margin:0 0 28px;}
+  .error-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center;}
+  .error-actions a{padding:12px 22px; border-radius:9px; font-weight:600; font-size:.9rem; text-decoration:none;}
+  .error-primary{background:var(--violet); color:#fff;}
+  .error-secondary{border:1px solid var(--line); color:var(--text);}
+</style>
+</head>
+<body>
+<div class="error-wrap">
+  <img src="logo-badge.svg" alt="AK Electronics Pro" class="error-icon">
+  <div class="error-code">404</div>
+  <h1>This circuit's broken</h1>
+  <p>The page you're looking for doesn't exist — it may have moved, or the link might have a typo. Let's get you back on track.</p>
+  <div class="error-actions">
+    <a href="index.html" class="error-primary">← Back to Home</a>
+    <a href="index.html#shop" class="error-secondary">Browse Products</a>
+  </div>
+</div>
+</body>
+</html>

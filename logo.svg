@@ -1,0 +1,67 @@
+<svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#35e6ff"/>
+      <stop offset="55%" stop-color="#7c5cff"/>
+      <stop offset="100%" stop-color="#ff4d94"/>
+    </linearGradient>
+    <linearGradient id="pinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9c94c7"/>
+      <stop offset="100%" stop-color="#6b6488"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="220" height="220" rx="42" fill="#0c0a1f"/>
+
+  <!-- chip pins: top -->
+  <rect x="55" y="6"  width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <rect x="105" y="6" width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <rect x="155" y="6" width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <!-- chip pins: bottom -->
+  <rect x="55" y="194"  width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <rect x="105" y="194" width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <rect x="155" y="194" width="10" height="20" rx="3" fill="url(#pinGrad)"/>
+  <!-- chip pins: left -->
+  <rect x="6" y="55"  width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+  <rect x="6" y="105" width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+  <rect x="6" y="155" width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+  <!-- chip pins: right -->
+  <rect x="194" y="55"  width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+  <rect x="194" y="105" width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+  <rect x="194" y="155" width="20" height="10" rx="3" fill="url(#pinGrad)"/>
+
+  <!-- main chip body -->
+  <rect x="30" y="30" width="160" height="160" rx="28" fill="url(#chipGrad)"/>
+  <rect x="30" y="30" width="160" height="160" rx="28" fill="none" stroke="#0c0a1f" stroke-width="2" opacity=".15"/>
+
+  <!-- subtle circuit traces on the chip -->
+  <g stroke="#0c0a1f" stroke-width="2.4" opacity=".22" fill="none" stroke-linecap="round">
+    <path d="M46 46 h18 v14"/>
+    <path d="M174 46 h-18 v14"/>
+    <path d="M46 174 h18 v-14"/>
+    <path d="M174 174 h-18 v-14"/>
+    <circle cx="64" cy="60" r="3" fill="#0c0a1f" stroke="none"/>
+    <circle cx="156" cy="60" r="3" fill="#0c0a1f" stroke="none"/>
+    <circle cx="64" cy="160" r="3" fill="#0c0a1f" stroke="none"/>
+    <circle cx="156" cy="160" r="3" fill="#0c0a1f" stroke="none"/>
+  </g>
+
+  <!-- AK monogram -->
+  <g filter="url(#softGlow)">
+    <text x="110" y="140" text-anchor="middle"
+      font-family="'Unbounded','Arial Black',sans-serif" font-weight="800"
+      font-size="76" fill="#0c0a1f" letter-spacing="-2">AK</text>
+  </g>
+
+  <!-- small connectivity dot + trace, bottom-right accent (IoT / "always on") -->
+  <circle cx="150" cy="150" r="6" fill="#0c0a1f" opacity=".85"/>
+  <circle cx="150" cy="150" r="10" fill="none" stroke="#0c0a1f" stroke-width="2" opacity=".35"/>
+</svg>

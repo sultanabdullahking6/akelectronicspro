@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="logo-badge.svg">
+<title id="pageTitle">Blog Post — AK Electronics Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .post-wrap{max-width:720px; margin:0 auto; padding:60px 20px 100px;}
+  .back-link{display:inline-block; margin-bottom:24px; color:var(--muted); font-size:.85rem;}
+  .back-link:hover{color:var(--cyan);}
+  .post-wrap h1{font-size:1.9rem; margin-bottom:8px;}
+  .post-date{font-family:var(--mono); font-size:.78rem; color:var(--cyan); display:block; margin-bottom:28px;}
+  .post-body{color:var(--text); font-size:1rem; line-height:1.85; white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<div class="post-wrap" id="postWrap">
+  <a href="blog.html" class="back-link">← Back to Blog</a>
+  <p style="color:var(--muted)">Loading…</p>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  window.__createSupabaseClient = createClient;
+  window.dispatchEvent(new Event('supabase-sdk-ready'));
+</script>
+<script src="config.js"></script>
+<script>
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[s]));
+  }
+  window.addEventListener("DOMContentLoaded", async () => {
+    const wrap = document.getElementById("postWrap");
+    const slug = new URLSearchParams(window.location.search).get("slug");
+    if (!slug || !SITE_CONFIG.supabaseUrl || !window.__createSupabaseClient){
+      wrap.innerHTML += `<p style="color:var(--muted)">Post not found.</p>`;
+      return;
+    }
+    const supabase = window.__createSupabaseClient(SITE_CONFIG.supabaseUrl, SITE_CONFIG.supabaseAnonKey);
+    const { data, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).eq("published", true).maybeSingle();
+    if (error || !data){
+      wrap.innerHTML += `<p style="color:var(--muted)">Post not found.</p>`;
+      return;
+    }
+    document.getElementById("pageTitle").textContent = data.title + " — AK Electronics Pro";
+    wrap.innerHTML = `
+      <a href="blog.html" class="back-link">← Back to Blog</a>
+      <h1>${escapeHtml(data.title)}</h1>
+      <span class="post-date">${new Date(data.created_at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })}</span>
+      <div class="post-body">${escapeHtml(data.content)}</div>
+    `;
+  });
+</script>
+</body>
+</html>

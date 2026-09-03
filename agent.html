@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="logo-badge.svg">
+<title>Agent Panel — AK Electronics Pro</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body data-panel="agent">
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+  <form id="adminLoginForm" class="login-box">
+    <h1>AK Electronics Pro<span>Agent Panel</span></h1>
+    <label>Email
+      <input type="email" id="adminEmailInput" required autocomplete="username">
+    </label>
+    <label>Password
+      <input type="password" id="adminPasswordInput" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn-primary full">Login</button>
+    <p id="loginMsg" class="msg"></p>
+  </form>
+</div>
+
+<!-- ACCESS DENIED (logged in, but not the admin email) -->
+<div id="deniedScreen" class="login-screen hidden">
+  <div class="login-box">
+    <h1>Access denied<span>This account isn't an approved agent account</span></h1>
+    <button id="logoutBtn" class="btn-primary full">Log out</button>
+  </div>
+</div>
+
+<!-- MFA CODE ENTRY (only appears if 2FA is enabled) -->
+<div id="mfaScreen" class="login-screen hidden">
+  <form id="mfaForm" class="login-box">
+    <h1>Enter your 2FA code<span>Open your authenticator app</span></h1>
+    <input type="text" id="mfaCodeInput" placeholder="6-digit code" required autocomplete="one-time-code" inputmode="numeric" maxlength="6">
+    <button type="submit" class="btn-primary full">Verify</button>
+    <p id="mfaMsg" class="msg"></p>
+  </form>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="dashboard" class="dashboard hidden">
+  <header class="admin-header">
+    <div class="brand">AK <span>Admin</span></div>
+    <nav class="admin-tabs">
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="products">Products</button>
+      <button class="tab-btn" data-tab="starterkits">Starter Kits</button>
+      <button class="tab-btn" data-tab="projects">Exhibition Projects</button>
+      <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="coupons">Coupons</button>
+      <button class="tab-btn" data-tab="messages">Messages</button>
+      <button class="tab-btn" data-tab="inquiries">Custom Inquiries</button>
+      <button class="tab-btn" data-tab="activitylog">Activity Log</button>
+      <button class="tab-btn" data-tab="bundles">Bundle Deals</button>
+      <button class="tab-btn" data-tab="blog">Blog</button>
+      <button class="tab-btn" data-tab="media">Media Library</button>
+      <button class="tab-btn" data-tab="ads">Ads Banner</button>
+      <button class="tab-btn" data-tab="webleads">Website Leads</button>
+    </nav>
+    <button id="getShopLocationBtn" class="btn-ghost">📍 Get Shop Location</button>
+    <button id="dashLogoutBtn" class="btn-ghost">Log out</button>
+  </header>
+
+  <div id="shopLocationModal" class="login-screen hidden" style="position:fixed; inset:0; z-index:200; background:rgba(11,11,18,.85);">
+    <div class="login-box">
+      <h1>Your Shop's Coordinates<span>Stand inside/outside your shop, then click below</span></h1>
+      <button id="detectShopLocationBtn" class="btn-primary full">📍 Detect My Current Location</button>
+      <div id="shopLocationResult" style="font-size:.82rem; color:var(--muted); word-break:break-all;"></div>
+      <button id="closeShopLocationBtn" class="btn-ghost full">Close</button>
+    </div>
+  </div>
+
+  <main class="admin-main">
+
+    <!-- DASHBOARD TAB (admin only) -->
+    <section id="tab-dashboard" class="tab-panel">
+      <div class="panel-head">
+        <h2>Dashboard</h2>
+        <button class="btn-ghost" id="refreshDashboardBtn">Refresh</button>
+        <button class="btn-ghost" id="exportOrdersBtn">📊 Export Orders to Excel</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+        <label style="font-size:.82rem; color:var(--muted);">Commission %</label>
+        <input type="number" id="commissionPercentInput" min="0" max="100" step="0.5" style="width:80px;">
+        <button class="icon-btn save" id="saveCommissionBtn">Save</button>
+        <span class="row-msg" id="commissionMsg"></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+        <label style="font-size:.82rem; color:var(--muted);">Delivery Fee — In Lahore</label>
+        <input type="number" id="deliveryLahoreInput" min="0" step="10" style="width:100px;">
+        <label style="font-size:.82rem; color:var(--muted);">Out of City</label>
+        <input type="number" id="deliveryOtherInput" min="0" step="10" style="width:100px;">
+        <button class="icon-btn save" id="saveDeliveryBtn">Save</button>
+        <span class="row-msg" id="deliveryMsg"></span>
+      </div>
+      <div id="mfaSetupBox" style="margin-bottom:24px; padding:16px; border:1px solid var(--line); border-radius:12px; max-width:360px;">
+        <h3 style="font-size:.9rem; margin:0 0 8px;">🔐 Two-Step Verification</h3>
+        <p class="hint" id="mfaStatusText" style="margin:0 0 10px;">Checking status…</p>
+        <button class="icon-btn" id="mfaEnableBtn" style="display:none;">Enable 2FA</button>
+        <div id="mfaEnrollBox" class="hidden" style="margin-top:10px;">
+          <img id="mfaQrImg" style="background:#fff; padding:8px; border-radius:8px; max-width:180px;">
+          <input type="text" id="mfaEnrollCode" placeholder="Enter 6-digit code from app" maxlength="6" style="margin-top:8px; width:100%;">
+          <button class="icon-btn save" id="mfaConfirmBtn" style="margin-top:8px; width:100%;">Confirm & Enable</button>
+          <span class="row-msg" id="mfaEnrollMsg"></span>
+        </div>
+      </div>
+      <div class="dashboard-stats">
+        <div class="stat-card"><span class="stat-label">Total Orders</span><span class="stat-value" id="statTotalOrders">—</span></div>
+        <div class="stat-card"><span class="stat-label">Pending Orders</span><span class="stat-value" id="statPending">—</span></div>
+        <div class="stat-card"><span class="stat-label">Completed Orders</span><span class="stat-value" id="statCompleted">—</span></div>
+        <div class="stat-card"><span class="stat-label">Total Earnings</span><span class="stat-value" id="statEarnings">—</span></div>
+        <div class="stat-card"><span class="stat-label">Product Agent Orders</span><span class="stat-value" id="statProductOrders">—</span></div>
+        <div class="stat-card"><span class="stat-label">Project Agent Orders</span><span class="stat-value" id="statProjectOrders">—</span></div>
+        <div class="stat-card"><span class="stat-label">Product Agent Commission</span><span class="stat-value" id="statProductCommission">—</span></div>
+        <div class="stat-card"><span class="stat-label">Project Agent Commission</span><span class="stat-value" id="statProjectCommission">—</span></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Revenue — Last 30 Days</h3>
+          <canvas id="revenueChart" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Top 5 Best-Selling Products</h3>
+          <canvas id="topProductsChart" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Products vs Projects — Sales Split</h3>
+          <canvas id="typeSplitChart" height="180"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Orders Handled — Products vs Projects Agent</h3>
+          <canvas id="agentPerformanceChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <h2 style="margin-top:32px; font-size:1.05rem;">All Customers</h2>
+      <div class="table-wrap">
+        <table id="customersTable">
+          <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Orders</th></tr></thead>
+          <tbody id="customersBody"></tbody>
+        </table>
+      </div>
+
+      <h2 style="margin-top:32px; font-size:1.05rem;">All Payments</h2>
+      <div class="table-wrap">
+        <table id="paymentsTable">
+          <thead><tr><th>Order</th><th>Method</th><th>Transaction ID</th><th>Payment Status</th><th>Total</th></tr></thead>
+          <tbody id="paymentsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PRODUCTS TAB -->
+    <section id="tab-products" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Products</h2>
+        <button class="btn-primary" id="addProductBtn">+ Add product</button>
+        <input type="file" id="bulkImportInput" accept=".csv,.xlsx,.xls" style="display:none;">
+        <button class="btn-ghost" id="bulkImportBtn">📥 Bulk Import (Excel/CSV)</button>
+        <span class="row-msg" id="bulkImportStatus"></span>
+      </div>
+      <p class="hint">Image column: click "📤 Upload" to pick photo(s) straight from your device — they upload automatically and multiple images become a gallery. You can also type a filename manually if you've already uploaded it to the <code>/images</code> folder the old way.</p>
+      <div class="table-wrap">
+        <table id="productsTable">
+          <thead>
+            <tr>
+              <th>Name</th><th>Category</th><th>Spec</th><th>Price</th><th>Stock</th><th>Image</th><th>Datasheet</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STARTER KITS TAB -->
+    <section id="tab-starterkits" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Arduino Starter Kits (Students)</h2>
+        <button class="btn-primary" id="addStarterKitBtn">+ Add starter kit</button>
+      </div>
+      <p class="hint">Complete beginner kits — everything a student needs to start. Image works the same way as Products — click "📤 Upload".</p>
+      <div class="table-wrap">
+        <table id="starterKitsTable">
+          <thead>
+            <tr>
+              <th>Name</th><th>Spec</th><th>Price</th><th>Stock</th><th>Image</th><th>Datasheet</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="starterKitsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PROJECTS TAB -->
+    <section id="tab-projects" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Exhibition Projects</h2>
+        <button class="btn-primary" id="addProjectBtn">+ Add project</button>
+      </div>
+      <p class="hint">Image column works the same way as Products — click "📤 Upload" to pick photo(s) directly from your device.</p>
+      <div class="table-wrap">
+        <table id="projectsTable">
+          <thead>
+            <tr>
+              <th>Name</th><th>Description</th><th>Price</th><th>Image</th><th>Datasheet</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="projectsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ORDERS TAB -->
+    <section id="tab-orders" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Orders</h2>
+        <button class="btn-ghost" id="refreshOrdersBtn">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table id="ordersTable">
+          <thead>
+            <tr>
+              <th>Order</th><th>Customer</th><th>Address</th><th>Items</th><th>Total</th><th>Payment</th><th>Payment Status</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COUPONS TAB -->
+    <section id="tab-coupons" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Coupons</h2>
+        <button class="btn-primary" id="addCouponBtn">+ Add coupon</button>
+      </div>
+      <p class="hint">Codes are matched exactly as typed by customers (not case-sensitive — always stored in CAPS).</p>
+      <div class="table-wrap">
+        <table id="couponsTable">
+          <thead>
+            <tr>
+              <th>Code</th><th>Discount %</th><th>Applies To</th><th>Active</th><th>Expires</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="couponsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MESSAGES TAB -->
+    <section id="tab-messages" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Contact Messages</h2>
+        <button class="btn-ghost" id="refreshMessagesBtn">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table id="messagesTable">
+          <thead>
+            <tr>
+              <th>From</th><th>Message</th><th>Received</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="messagesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CUSTOM INQUIRIES TAB -->
+    <section id="tab-inquiries" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Custom Order Inquiries</h2>
+        <button class="btn-ghost" id="refreshInquiriesBtn">Refresh</button>
+      </div>
+      <p class="hint">Requests from customers looking for something not listed on the site.</p>
+      <div class="table-wrap">
+        <table id="inquiriesTable">
+          <thead>
+            <tr>
+              <th>Type</th><th>Name</th><th>Phone</th><th>Message</th><th>Received</th><th>Resolved</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="inquiriesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ACTIVITY LOG TAB (admin only) -->
+    <section id="tab-activitylog" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Activity Log</h2>
+        <button class="btn-ghost" id="refreshActivityLogBtn">Refresh</button>
+      </div>
+      <p class="hint">Every product/project/order/coupon change made by you or your agents.</p>
+      <div class="table-wrap">
+        <table id="activityLogTable">
+          <thead>
+            <tr>
+              <th>When</th><th>Who</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="activityLogBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BUNDLE DEALS TAB (admin only) -->
+    <section id="tab-bundles" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Bundle Deals</h2>
+        <button class="btn-primary" id="addBundleBtn">+ Add bundle</button>
+      </div>
+      <p class="hint">Pick 2+ products, set a combo price — customers get this price automatically when their cart contains all the bundle's items.</p>
+      <div id="bundlesBody" style="display:flex; flex-direction:column; gap:16px;"></div>
+    </section>
+
+    <!-- BLOG TAB -->
+    <section id="tab-blog" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Blog Posts</h2>
+        <button class="btn-primary" id="addPostBtn">+ New post</button>
+      </div>
+      <div id="postsBody" style="display:flex; flex-direction:column; gap:14px;"></div>
+    </section>
+
+    <!-- MEDIA LIBRARY TAB -->
+    <section id="tab-media" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Media Library</h2>
+      </div>
+      <p class="hint">Upload photos into a category, then browse/reuse/delete them here anytime — separate from individual products.</p>
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap;">
+        <select id="mediaCategorySelect"></select>
+        <input type="file" id="mediaUploadInput" accept="image/*" multiple style="display:none;">
+        <button class="btn-primary" id="mediaUploadBtn">📤 Upload to this category</button>
+        <span class="row-msg" id="mediaUploadStatus"></span>
+      </div>
+      <div id="mediaGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:14px;"></div>
+    </section>
+
+    <!-- ADS BANNER TAB (admin only) -->
+    <section id="tab-ads" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Ads</h2>
+      </div>
+
+      <h3 style="font-size:.9rem; margin:0 0 6px;">🎬 Splash Video (plays once when the site opens)</h3>
+      <p class="hint">Full-screen, 10 seconds recommended, with a ✕ to skip. Only 1 allowed.</p>
+      <div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap; align-items:center;">
+        <input type="file" id="adSplashVideoInput" accept="video/*" style="display:none;">
+        <button class="btn-primary" id="adSplashVideoBtn">🎬 Upload Splash Video</button>
+        <span class="row-msg" id="adSplashStatus"></span>
+      </div>
+      <div id="adsSplashBody" style="display:flex; flex-direction:column; gap:12px; margin-bottom:32px;"></div>
+
+      <h3 style="font-size:.9rem; margin:0 0 6px;">🖼️ Mid-Page Picture Ads (scrolls with the page)</h3>
+      <p class="hint">Up to 4 images, rotating automatically.</p>
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
+        <input type="file" id="adMidImageInput" accept="image/*" style="display:none;">
+        <button class="btn-primary" id="adMidImageBtn">📤 Upload Picture Ad</button>
+        <span class="row-msg" id="adMidStatus"></span>
+      </div>
+      <div id="adsMidBody" style="display:flex; flex-direction:column; gap:12px; margin-bottom:32px;"></div>
+
+      <h3 style="font-size:.9rem; margin:0 0 6px;">🎒 Starter Kit Picture Ads (next to the Starter Kits section)</h3>
+      <p class="hint">Up to 4 images, rotating automatically. Picture only, no video here.</p>
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center;">
+        <input type="file" id="adKitImageInput" accept="image/*" style="display:none;">
+        <button class="btn-primary" id="adKitImageBtn">📤 Upload Picture Ad</button>
+        <span class="row-msg" id="adKitStatus"></span>
+      </div>
+      <div id="adsKitBody" style="display:flex; flex-direction:column; gap:12px;"></div>
+    </section>
+
+    <!-- WEBSITE LEADS TAB (admin only) -->
+    <section id="tab-webleads" class="tab-panel hidden">
+      <div class="panel-head">
+        <h2>Website Building Leads</h2>
+        <button class="btn-ghost" id="refreshWebLeadsBtn">Refresh</button>
+      </div>
+      <p class="hint">People who want you to build them a website. Only you see these — never forwarded to agents.</p>
+      <div class="table-wrap">
+        <table id="webLeadsTable">
+          <thead>
+            <tr>
+              <th>Name</th><th>Phone</th><th>Message</th><th>Received</th><th>Resolved</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="webLeadsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  window.__createSupabaseClient = createClient;
+  window.dispatchEvent(new Event('supabase-sdk-ready'));
+</script>
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
